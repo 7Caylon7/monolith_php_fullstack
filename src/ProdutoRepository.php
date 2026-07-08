@@ -22,5 +22,25 @@
                 return null;
             }
         }
+
+        //Método para cadastrar produto por código de barra
+        public function cadastrarProduto($dados) {
+            try{
+                $stmt = $this->conn->prepare("INSERT INTO produtos (codigo_barra, nome, valor, quantidade)
+                VALUES (:codigo, :nome, :valor, :quantidade)");
+
+                $stmt->execute([
+                    ':codigo' => $dados['codigo'],
+                    ':nome' => $dados['nome'],
+                    ':valor' => $dados['valor'],
+                    ':quantidade' => $dados['quantidade']
+                ]);
+
+                return ['sucess' => true, 'id' => $this->conn->lastInsertId()];
+            } catch (PDOException $e) {
+                return ['sucess' => false, 'erro' => $e->getMessage()];
+            }
+        }
+        
     }
 ?>
