@@ -42,5 +42,15 @@
             }
         }
         
+        public function deletarProduto($codigo){
+            try{
+                $stmt = $this->conn->prepare("DELETE FROM produtos WHERE codigo_barra =?");
+                $stmt->execute([$codigo]);
+
+                return ['sucess' => true, 'Produto Deletado'];
+            } catch (PDOException $e) {
+                return ['sucess' => false, 'Erro ao deletar'];
+            }
+        }
     }
 ?>
