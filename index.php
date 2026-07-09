@@ -1,35 +1,17 @@
 <?php
-// require_once './config/config.php';
-// require_once './src/repository/ProdutoRepository.php';
+require_once './config/config.php';
+require_once './src/repository/ProdutoRepository.php';
+require_once './src/validator/produtoValidator.php';
 
-// $repo = new ProdutoRepository($conn);
+$repo = new ProdutoRepository($conn);
+$resultado = null;
 
-// $produto = $repo->buscarCodigoBarra('14253698032516');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['codigo_produto'])) {
+    
+    $validator = new ProdutoValidator($repo);
 
-// echo "<pre>";
-// print_r($produto);
-// echo "</pre>";
-
-// $dados = [
-//     'codigo' => '7891234567890',
-//     'nome' => 'Produto Teste',
-//     'valor' => 99.90,
-//     'quantidade' => 10
-// ];
-
-// // Executa a função
-// $resultado = $repo->cadastrarProduto($dados);
-
-// // Exibe o resultado
-// echo "<pre>";
-// print_r($resultado);
-// echo "</pre>";
-
-
-// $deletarproduto = $repo->deletarProduto('7891234567890');
-// echo "<pre>";
-// print_r($deletarproduto);
-// echo "</pre>";
+    $resultado = $validator->validaTamanhoEntrada($_POST['codigo_produto']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -59,12 +41,19 @@
         </ul>
     </header>
 
-    <main class="flex-grow-1 bg-body-tertiary">
-        <div class="container py-3 d-flex justify-content-center">
+    <main class="flex-grow-1 bg-body-tertiary ">
+        <form class="container py-3 d-flex justify-content-center" method="POST" action="index.php">
             <h3 class="me-5">Consultar Produto:</h3>
-            <input class="form-control w-25 me-1" type="text" placeholder="Código de Barras">
+            <input class="form-control w-25 me-1" type="text" placeholder="Código de Barras" name="codigo_produto">
             <button class="btn btn-warning" type="submit">Pesquisar</button>
-        </div>
+        </form>
+        <?php
+        if (isset($resultado)) {
+            if ($resultado['message']) {
+                echo "❌ " . $resultado['message'];
+            }
+        }
+        ?>
     </main>
 
     <footer class="d-flex flex-wrap align-items-center justify-content-between py-3 border-top bg-dark mt-auto px-4">
