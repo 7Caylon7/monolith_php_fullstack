@@ -1,6 +1,8 @@
 <?php
-require_once './config/config.php';
-require_once './src/repository/ProdutoRepository.php';
+namespace ProdutoValidador;
+
+use App\config\Database;
+use App\repository\ProdutoRepository;
 
 
 class ProdutoValidator {

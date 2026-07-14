@@ -1,4 +1,9 @@
 <?php
+namespace App\repository;
+
+use PDO;
+use PDOException;
+    
     class ProdutoRepository
     {
         private $conn;
@@ -11,7 +16,7 @@
         //Método para buscar produto por código de barra
         public function buscarCodigoBarra($codigo){
             try{
-                $stmt = $this->conn->prepare("SELECT * FROM produtos WHERE codigo_barra = ?");
+                $stmt = $this->conn->prepare("SELECT nome, valor, quantidade FROM produtos WHERE codigo_barra = ?");
                 $stmt->execute([$codigo]);
 
                 $produto = $stmt->fetch(PDO::FETCH_ASSOC);

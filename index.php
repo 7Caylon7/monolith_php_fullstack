@@ -1,16 +1,24 @@
 <?php
-require_once './config/config.php';
-require_once './src/repository/ProdutoRepository.php';
-require_once './src/validator/produtoValidator.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
-$repo = new ProdutoRepository($conn);
+use App\config\Database;
+use App\repository\ProdutoRepository;
+
 $resultado = null;
+$mensagem = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['codigo_produto'])) {
-    
-    $validator = new ProdutoValidator($repo);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['codigo']) && !empty($_POST['codigo'])) {
+    try {
+        $conn = Database::getConnection();
+        $repo = new ProdutoRepository($conn);
+        $resultado = $repo->buscarCodigoBarra($_POST['codigo']);
 
-    $resultado = $validator->validaTamanhoEntrada($_POST['codigo_produto']);
+        if (empty($resultado)) {
+            $mensagem = "Nenhum produto encontrado com o código: " . htmlspecialchars($_POST['codigo']);
+        }
+    } catch (\Exception $e) {
+        $mensagem = "Erro: " . $e->getMessage();
+    }
 }
 ?>
 
@@ -34,26 +42,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['codigo_produto'])) {
             <li class="nav-link px-2 text-light">Contato</li>
         </ul>
 
-        <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
-            <li class="nav-link px-2 text-light">Facebook</li>
-            <li class="nav-link px-2 text-light">Instagram</li>
-            <li class="nav-link px-2 text-light">WhatsApp</li>
-        </ul>
+        <a href="" class="nav-link px-2 text-light">Entrar</a>
     </header>
 
-    <main class="flex-grow-1 bg-body-tertiary ">
+    <main class="flex-grow-1">
         <form class="container py-3 d-flex justify-content-center" method="POST" action="index.php">
-            <h3 class="me-5">Consultar Produto:</h3>
-            <input class="form-control w-25 me-1" type="text" placeholder="Código de Barras" name="codigo_produto">
+            <label class="me-5">Consultar Produto:</label>
+            <input class="form-control w-25 me-1" type="text" placeholder="Código de Barras" name="codigo" id="codigo" required>
             <button class="btn btn-warning" type="submit">Pesquisar</button>
         </form>
-        <?php
-        if (isset($resultado)) {
-            if ($resultado['message']) {
-                echo "❌ " . $resultado['message'];
-            }
-        }
-        ?>
+
+        <?php if ($resultado) { ?>
+            <table class="container table table-striped table-dark border border-secondary rounded-3 overflow-hidden">
+                <thead class="rounded-3">
+                    <tr>
+                        <th scope="col">Produto</th>
+                        <th scope="col">Valor</th>
+                        <th scope="col">Quantidade</th>
+                    </tr>
+                </thead>
+                <tr class="rounded-3">
+                    <td scope="row"><?php echo htmlspecialchars($resultado['nome']) ?></td>
+                    <td scope="row"><?php echo htmlspecialchars($resultado['valor']) ?></td>
+                    <td scope="row"><?php echo htmlspecialchars($resultado['quantidade']) ?></td>
+                </tr>
+            </table>
+        <?php } ?>
+
     </main>
 
     <footer class="d-flex flex-wrap align-items-center justify-content-between py-3 border-top bg-dark mt-auto px-4">

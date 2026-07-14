@@ -1,0 +1,13 @@
+{
+    "name": "seu-projeto/sistema",
+    "description": "Meu sistema PHP seguindo SOLID",
+    "type": "project",
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
