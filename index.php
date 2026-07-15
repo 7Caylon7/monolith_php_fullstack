@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['codigo']) && !empty($
             <li class="nav-link px-2 text-light">Contato</li>
         </ul>
 
-        <a href="" class="nav-link px-2 text-light">Entrar</a>
+        <a href="view/administrator.php" class="nav-link px-2 text-light">Entrar</a>
     </header>
 
     <main class="flex-grow-1">
@@ -53,18 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['codigo']) && !empty($
         </form>
 
         <?php if ($resultado) { ?>
-            <table class="container table table-striped table-dark border border-secondary rounded-3 overflow-hidden">
+            <table class="container table table-striped table-dark rounded-3 overflow-hidden border-0 w-50">
                 <thead class="rounded-3">
                     <tr>
-                        <th scope="col">Produto</th>
-                        <th scope="col">Valor</th>
-                        <th scope="col">Quantidade</th>
+                        <th scope="col" class="w-25">Produto</th>
+                        <th scope="col" class="w-25">Valor</th>
+                        <th scope="col" class="w-25">Quantidade</th>
                     </tr>
                 </thead>
                 <tr class="rounded-3">
-                    <td scope="row"><?php echo htmlspecialchars($resultado['nome']) ?></td>
-                    <td scope="row"><?php echo htmlspecialchars($resultado['valor']) ?></td>
-                    <td scope="row"><?php echo htmlspecialchars($resultado['quantidade']) ?></td>
+                    <td scope="row" class="w-25"><?php echo htmlspecialchars($resultado['nome']) ?></td>
+                    <td scope="row" class="w-25"><?php echo htmlspecialchars($resultado['valor']) ?></td>
+                    <td scope="row" class="w-25"><?php echo htmlspecialchars($resultado['quantidade']) ?></td>
                 </tr>
             </table>
         <?php } ?>
