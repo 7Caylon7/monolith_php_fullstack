@@ -13,6 +13,19 @@ use PDOException;
             $this->conn = $connection;
         }
 
+        public function buscarProdutos(){
+            try {
+                $stmt = $this->conn->prepare("SELECT * FROM produtos");
+                $stmt->execute();
+                $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                return $produtos ? $produtos : null;
+            } catch (PDOException $e) {
+                echo "Erro ao buscar produtos" . $e->getMessage();
+                return null;
+            }
+        }
+
         //Método para buscar produto por código de barra
         public function buscarCodigoBarra($codigo){
             try{
