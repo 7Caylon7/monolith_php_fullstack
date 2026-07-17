@@ -3,104 +3,26 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\config\Database;
 use App\repository\ProdutoRepository;
+use App\service\ProdutoService;
+use App\controller\ProdutoController;
 
-session_start();
-
-$dadosPreenchidos = []; // ← DEFINIDO AQUI!
-$mensagem = '';
-$erro = false;
 
 $conn = Database::getConnection();
-$repo = new ProdutoRepository($conn);
-$produtos = $repo->buscarProdutos();
+$repository = new ProdutoRepository($conn);
+$service = new ProdutoService($repository);
+$controller = new ProdutoController($service);
 
-// Gera token CSRF
-if (empty($_SESSION['token'])) {
-    $_SESSION['token'] = bin2hex(random_bytes(32));
-}
 
-// PRG Pattern - Verifica se tem dados para processar (vindos da sessão)
-if (isset($_SESSION['processar_post'])) {
-    $dadosPost = $_SESSION['dados_post'] ?? [];
-    unset($_SESSION['processar_post']);
-    unset($_SESSION['dados_post']);
-    
-    if (!empty($dadosPost)) {
-        $camposObrigatorios = ['codigo', 'nome', 'valor', 'quantidade'];
-        $camposFaltando = [];
+$controller->processarRequisicao();
 
-        // CORREÇÃO: foreach com $camposObrigatorios
-        foreach ($camposObrigatorios as $campo) {
-            if (!isset($dadosPost[$campo]) || empty(trim($dadosPost[$campo]))) {
-                $camposFaltando[] = $campo;
-            }
-        }
 
-        if (!empty($camposFaltando)) {
-            $mensagem = "Campos obrigatórios faltando: " . implode(', ', $camposFaltando);
-            $erro = true;
-            $dadosPreenchidos = $dadosPost;
-        } else {
-            try {
-                $dadosCadastro = [
-                    'codigo' => trim($dadosPost['codigo']),
-                    'nome' => trim($dadosPost['nome']),
-                    'valor' => trim($dadosPost['valor']),
-                    'quantidade' => trim($dadosPost['quantidade']),
-                ];
-
-                $resultado = $repo->cadastrarProduto($dadosCadastro);
-
-                if ($resultado) {
-                    $mensagem = "Produto cadastrado com sucesso!";
-                    $erro = false;
-                    $dadosPreenchidos = []; // Limpa o formulário
-                    $_SESSION['token'] = bin2hex(random_bytes(32)); // Novo token
-                    
-                    // Atualiza lista de produtos
-                    $produtos = $repo->buscarProdutos();
-                } else {
-                    $mensagem = "Erro ao cadastrar produto.";
-                    $erro = true;
-                    $dadosPreenchidos = $dadosCadastro;
-                }
-            } catch (\Exception $e) {
-                $mensagem = "Erro no cadastro: " . $e->getMessage();
-                $erro = true;
-                $dadosPreenchidos = $dadosCadastro ?? [];
-            }
-        }
-    }
-}
-
-// Processa o POST e redireciona (PRG Pattern)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verifica token CSRF
-    if (!isset($_POST['token']) || $_POST['token'] !== $_SESSION['token']) {
-        $_SESSION['mensagem'] = "Token inválido!";
-        $_SESSION['erro'] = true;
-        header('Location: ' . $_SERVER['PHP_SELF']);
-        exit;
-    }
-    
-    // Salva dados na sessão e redireciona
-    $_SESSION['dados_post'] = $_POST;
-    $_SESSION['processar_post'] = true;
-    
-    header('Location: ' . $_SERVER['PHP_SELF']);
-    exit;
-}
-
-// Recupera mensagens da sessão (para exibir após redirecionamento)
-if (isset($_SESSION['mensagem'])) {
-    $mensagem = $_SESSION['mensagem'];
-    unset($_SESSION['mensagem']);
-}
-if (isset($_SESSION['erro'])) {
-    $erro = $_SESSION['erro'];
-    unset($_SESSION['erro']);
-}
+$dadosPreenchidos = $controller->getDados();
+$mensagem = $controller->getMensagem();
+$erro = $controller->getErro();
+$token = $controller->getToken();
+$produtos = $controller->getProdutos();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -114,93 +36,67 @@ if (isset($_SESSION['erro'])) {
         <h1>Cadastrar Produto</h1>
 
         <?php if (!empty($mensagem)): ?>
-            <div class="mensagem <?php echo $erro ? 'erro' : 'sucesso'; ?>">
-                <?php echo htmlspecialchars($mensagem); ?>
+            <div class="mensagem <?= $erro ? 'erro' : 'sucesso' ?>">
+                <?= htmlspecialchars($mensagem) ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="">
-            <input type="hidden" name="token" value="<?= $_SESSION['token'] ?>">
+        <form method="POST">
+            <input type="hidden" name="token" value="<?= $token ?>">
             
-            <!-- Código de Barras -->
             <div class="form-group">
-                <label for="codigo">
-                    Código de Barras <span class="campo-obrigatorio">*</span>
-                </label>
-                <input type="text"
-                    id="codigo"
-                    name="codigo"
-                    value="<?php echo htmlspecialchars($dadosPreenchidos['codigo'] ?? ''); ?>"
-                    required>
+                <label for="codigo">Código de Barras *</label>
+                <input type="text" id="codigo" name="codigo" 
+                       value="<?= htmlspecialchars($dadosPreenchidos['codigo'] ?? '') ?>" required>
             </div>
 
-            <!-- Nome -->
             <div class="form-group">
-                <label for="nome">
-                    Nome do Produto <span class="campo-obrigatorio">*</span>
-                </label>
-                <input type="text"
-                    id="nome"
-                    name="nome"
-                    value="<?php echo htmlspecialchars($dadosPreenchidos['nome'] ?? ''); ?>"
-                    required>
+                <label for="nome">Nome do Produto *</label>
+                <input type="text" id="nome" name="nome" 
+                       value="<?= htmlspecialchars($dadosPreenchidos['nome'] ?? '') ?>" required>
             </div>
 
-            <!-- Preço -->
             <div class="form-group">
-                <label for="valor">
-                    Preço (R$) <span class="campo-obrigatorio">*</span>
-                </label>
-                <input type="number"
-                    id="valor"
-                    name="valor"
-                    step="0.01"
-                    min="0"
-                    value="<?php echo htmlspecialchars($dadosPreenchidos['valor'] ?? ''); ?>"
-                    required>
+                <label for="valor">Preço (R$) *</label>
+                <input type="number" id="valor" name="valor" step="0.01" min="0" 
+                       value="<?= htmlspecialchars($dadosPreenchidos['valor'] ?? '') ?>" required>
             </div>
 
-            <!-- Quantidade -->
             <div class="form-group">
-                <label for="quantidade">
-                    Quantidade em Estoque <span class="campo-obrigatorio">*</span>
-                </label>
-                <input type="number"
-                    id="quantidade"
-                    name="quantidade"
-                    min="0"
-                    value="<?php echo htmlspecialchars($dadosPreenchidos['quantidade'] ?? ''); ?>"
-                    required>
+                <label for="quantidade">Quantidade *</label>
+                <input type="number" id="quantidade" name="quantidade" min="0" 
+                       value="<?= htmlspecialchars($dadosPreenchidos['quantidade'] ?? '') ?>" required>
             </div>
 
-            <button type="submit" class="btn">Cadastrar Produto</button>
-            <a href="listar_produtos.php" style="margin-left: 10px;">Cancelar</a>
+            <button type="submit" class="btn">Cadastrar</button>
+            <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn-cancelar">Cancelar</a>
         </form>
 
+        <h2>📋 Produtos em Estoque</h2>
+        
         <?php if (!empty($produtos)): ?>
-        <table>
-            <caption>Produtos em Estoque</caption>
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Nome</th>
-                    <th>Valor</th>
-                    <th>Quantidade</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($produtos as $produto): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($produto['codigo_barra'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($produto['nome'] ?? ''); ?></td>
-                    <td>R$ <?php echo number_format($produto['valor'] ?? 0, 2, ',', '.'); ?></td>
-                    <td><?php echo htmlspecialchars($produto['quantidade'] ?? 0); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Valor</th>
+                        <th>Quantidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($produtos as $produto): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($produto['codigo_barra']) ?></td>
+                            <td><?= htmlspecialchars($produto['nome']) ?></td>
+                            <td>R$ <?= number_format($produto['valor'], 2, ',', '.') ?></td>
+                            <td><?= $produto['quantidade'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php else: ?>
-            <p>Nenhum produto encontrado.</p>
+            <p>Nenhum produto cadastrado.</p>
         <?php endif; ?>
     </div>
 </body>
